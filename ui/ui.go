@@ -125,7 +125,7 @@ func (self *MainWindow) interactBoard(eb *gtk.EventBox, event *gdk.Event ) {
 	y,x := self.calculatePosition( evbutton.X(), evbutton.Y())
 
 	if !self.Board.SelectTile(x,y) {
-		lastx,lasty := self.gxetSelectedPiece()
+		lastx,lasty := self.getSelectedPiece()
 		if lastx != -1 && self.Board.Places[y][x] == nil {
 			self.Board.MovePiece(lastx,lasty, x,y)
 			self.Board.Places[y][x].Selected = false
