@@ -1,14 +1,13 @@
 package board
 
-import(
-	"github.com/juanfgs/checkers/lib/piece"
+import (
 	"errors"
 	"fmt"
+	"github.com/juanfgs/checkers/lib/piece"
 )
 
 // Size of the board
 const size = 8
-
 
 type Board struct {
 	Places [][]*piece.Piece
@@ -17,8 +16,8 @@ type Board struct {
 func NewBoard() Board {
 	board := Board{}
 	board.Places = make([][]*piece.Piece, size)
-	for i:= range board.Places {
-		board.Places[i] = make([]*piece.Piece,size)
+	for i := range board.Places {
+		board.Places[i] = make([]*piece.Piece, size)
 	}
 	// Place pieces on the board
 	board.placeRedPieces()
@@ -39,7 +38,7 @@ func (self Board) RenderText() {
 			} else {
 				fmt.Print("0 ")
 			}
-			if idx == len(row) -1 {
+			if idx == len(row)-1 {
 				fmt.Println("|")
 			}
 		}
@@ -48,18 +47,21 @@ func (self Board) RenderText() {
 }
 
 // Sets tile as selected
-func ( self *Board)  SelectTile(x int, y int)  {
-	self.deselectTiles()
-	if self.Places[x][y] != nil {
-		self.Places[x][y].Selected = true
-	} 
+func (self *Board) SelectTile(x int, y int) bool {
+	if self.Places[y][x] != nil {
+		self.deselectTiles()
+		self.Places[y][x].Selected = true
+		return true
+	} else {
+		return false
+	}
 }
 
 // Deselects all tiles
-func (self *Board) deselectTiles(){
-	for _,x := range(self.Places) {
-		for _,y := range(x) {
-			if y != nil{
+func (self *Board) deselectTiles() {
+	for _, x := range self.Places {
+		for _, y := range x {
+			if y != nil {
 				y.Selected = false
 			}
 		}
@@ -67,15 +69,15 @@ func (self *Board) deselectTiles(){
 }
 
 // Places the red pieces on the board
-func ( self *Board ) placeRedPieces() {
-	for i := 0; i < len(self.Places) ; i++ {
-		for j := 0; j < (size / 2) -1; j++ {
-			if i % 2 == 0 { // if row is pair
-				if j % 2 != 0 { // place on odd columns
+func (self *Board) placeRedPieces() {
+	for i := 0; i < len(self.Places); i++ {
+		for j := 0; j < (size/2)-1; j++ {
+			if i%2 == 0 { // if row is pair
+				if j%2 != 0 { // place on odd columns
 					self.Places[i][j] = piece.NewPiece("red")
 				}
 			} else {
-				if j % 2 == 0 { // place on even columns
+				if j%2 == 0 { // place on even columns
 					self.Places[i][j] = piece.NewPiece("red")
 				}
 			}
@@ -85,15 +87,15 @@ func ( self *Board ) placeRedPieces() {
 }
 
 //places the black pieces on the board
-func ( self *Board ) placeBlackPieces() {
-	for i := size -1 ; i > (len(self.Places) / 2)  ; i-- {
-		for j := 0 ; j < size    ; j++ {
-			if i % 2 == 0 { // if row is pair
-				if j % 2 != 0 { // place on odd columns
+func (self *Board) placeBlackPieces() {
+	for i := size - 1; i > (len(self.Places) / 2); i-- {
+		for j := 0; j < size; j++ {
+			if i%2 == 0 { // if row is pair
+				if j%2 != 0 { // place on odd columns
 					self.Places[j][i] = piece.NewPiece("black")
 				}
 			} else {
-				if j % 2 == 0 { // place on even columns
+				if j%2 == 0 { // place on even columns
 					self.Places[j][i] = piece.NewPiece("black")
 				}
 			}
@@ -102,8 +104,7 @@ func ( self *Board ) placeBlackPieces() {
 	}
 }
 
-
-func (self *Board) MovePiece(x,y,destX,destY int) error {
+func (self *Board) MovePiece(x, y, destX, destY int) error {
 	if size < destX {
 		return errors.New("Illegal move: out of bounds")
 	}
@@ -118,18 +119,18 @@ func (self *Board) MovePiece(x,y,destX,destY int) error {
 	return nil
 }
 
-func (self *Board) MovePieceBottomLeft(x,y int) {
-	self.MovePiece(x,y,x-1,y+1)
+func (self *Board) MovePieceBottomLeft(x, y int) {
+	self.MovePiece(x, y, x-1, y+1)
 }
 
-func (self *Board) MovePieceBottomRight(x,y int) {
-	self.MovePiece(x,y,x+1,y+1)
+func (self *Board) MovePieceBottomRight(x, y int) {
+	self.MovePiece(x, y, x+1, y+1)
 }
 
-func (self *Board) MovePieceTopLeft(x,y int) {
-	self.MovePiece(y,x,x-1,y-1)
+func (self *Board) MovePieceTopLeft(x, y int) {
+	self.MovePiece(y, x, x-1, y-1)
 }
 
-func (self *Board) MovePieceTopRight(x,y int) {
-	self.MovePiece(y,x,x+1,y-1)
+func (self *Board) MovePieceTopRight(x, y int) {
+	self.MovePiece(y, x, x+1, y-1)
 }
