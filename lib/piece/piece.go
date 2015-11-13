@@ -3,11 +3,12 @@ package piece
 type Piece struct {
 	Level string
 	Team string
+	Selected bool
 
 }
 
 func NewPiece(team string) *Piece {
-	return &Piece{"man",  team}
+	return &Piece{"man",  team, false}
 }
 
 func (self *Piece) RenderText() string {

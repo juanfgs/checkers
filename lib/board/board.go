@@ -26,7 +26,7 @@ func NewBoard() Board {
 	return board
 }
 
-
+// Renders the board as ascii
 func (self Board) RenderText() {
 	fmt.Println("  a b c d e f g h i j ")
 	fmt.Println("  --------------------")
@@ -47,10 +47,29 @@ func (self Board) RenderText() {
 	fmt.Println("  --------------------")
 }
 
+// Sets tile as selected
+func ( self *Board)  SelectTile(x int, y int)  {
+	self.deselectTiles()
+	if self.Places[x][y] != nil {
+		self.Places[x][y].Selected = true
+	} 
+}
 
+// Deselects all tiles
+func (self *Board) deselectTiles(){
+	for _,x := range(self.Places) {
+		for _,y := range(x) {
+			if y != nil{
+				y.Selected = false
+			}
+		}
+	}
+}
+
+// Places the red pieces on the board
 func ( self *Board ) placeRedPieces() {
-	for i := 0; i < (len(self.Places) / 2) -1; i++ {
-		for j := 0; j < size; j++ {
+	for i := 0; i < len(self.Places) ; i++ {
+		for j := 0; j < (size / 2) -1; j++ {
 			if i % 2 == 0 { // if row is pair
 				if j % 2 != 0 { // place on odd columns
 					self.Places[i][j] = piece.NewPiece("red")
@@ -65,17 +84,17 @@ func ( self *Board ) placeRedPieces() {
 	}
 }
 
-
+//places the black pieces on the board
 func ( self *Board ) placeBlackPieces() {
-	for i := len(self.Places) -1; i > (len(self.Places) / 2) ; i-- {
-		for j := 0; j < size; j++ {
+	for i := size -1 ; i > (len(self.Places) / 2)  ; i-- {
+		for j := 0 ; j < size    ; j++ {
 			if i % 2 == 0 { // if row is pair
 				if j % 2 != 0 { // place on odd columns
-					self.Places[i][j] = piece.NewPiece("black")
+					self.Places[j][i] = piece.NewPiece("black")
 				}
 			} else {
 				if j % 2 == 0 { // place on even columns
-					self.Places[i][j] = piece.NewPiece("black")
+					self.Places[j][i] = piece.NewPiece("black")
 				}
 			}
 		}
@@ -84,7 +103,7 @@ func ( self *Board ) placeBlackPieces() {
 }
 
 
-func (self *Board) movePiece(x,y,destX,destY int) error {
+func (self *Board) MovePiece(x,y,destX,destY int) error {
 	if size < destX {
 		return errors.New("Illegal move: out of bounds")
 	}
@@ -100,17 +119,17 @@ func (self *Board) movePiece(x,y,destX,destY int) error {
 }
 
 func (self *Board) MovePieceBottomLeft(x,y int) {
-	self.movePiece(x,y,x-1,y+1)
+	self.MovePiece(x,y,x-1,y+1)
 }
 
 func (self *Board) MovePieceBottomRight(x,y int) {
-	self.movePiece(x,y,x+1,y+1)
+	self.MovePiece(x,y,x+1,y+1)
 }
 
 func (self *Board) MovePieceTopLeft(x,y int) {
-	self.movePiece(y,x,x-1,y-1)
+	self.MovePiece(y,x,x-1,y-1)
 }
 
 func (self *Board) MovePieceTopRight(x,y int) {
-	self.movePiece(y,x,x+1,y-1)
+	self.MovePiece(y,x,x+1,y-1)
 }
