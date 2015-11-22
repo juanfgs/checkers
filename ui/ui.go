@@ -5,6 +5,7 @@ import (
 	"github.com/gotk3/gotk3/gtk"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/juanfgs/checkers/lib/board"
+	"fmt"
 	"log"
 
 )
@@ -15,7 +16,16 @@ var BLACK = []float64{0, 0, 0}
 
 type MainWindow struct {
 	*gtk.Window
+	// Areas
 	MainArea    *gtk.Box
+	ScoreArea    *gtk.Box
+
+	// Labels
+	Scores    *gtk.Label	
+	BlacksScore    *gtk.Label
+	RedsScore    *gtk.Label
+
+	// Board drawing details
 	BoardEventBox *gtk.EventBox
 	BoardView   *gtk.DrawingArea
 	BoardHeight int
@@ -23,6 +33,8 @@ type MainWindow struct {
 	boardSize   int
 	tileWidth   float64
 	tileHeight   float64
+
+	// Internal board structure
 	Board       board.Board
 	err         error
 }
@@ -52,23 +64,47 @@ func NewMainWindow() *MainWindow {
 func (self *MainWindow) InitializeWidgets() {
 
 	self.BoardView, self.err = gtk.DrawingAreaNew()
-	self.MainArea, self.err = gtk.BoxNew(gtk.ORIENTATION_VERTICAL, 1)
+	self.MainArea, self.err = gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 1)
+	self.ScoreArea, self.err = gtk.BoxNew(gtk.ORIENTATION_VERTICAL, 2)
 	self.BoardEventBox, self.err =	gtk.EventBoxNew()
+	self.Scores, self.err = gtk.LabelNew("Scores:")
+	self.BlacksScore, self.err = gtk.LabelNew("Black pieces:")
+	self.RedsScore, self.err = gtk.LabelNew("Black pieces:")
 	self.BoardWidth = 640
 	self.BoardHeight = 480
 	self.BoardEventBox.Add(self.BoardView)
 	if self.err != nil {
 		log.Fatal("Failed to draw board")
 	}
+
 	self.BoardEventBox.AddEvents(int(gdk.BUTTON_PRESS_MASK))
 	self.BoardEventBox.Connect("button_press_event", self.interactBoard)
 	self.MainArea.PackStart(self.BoardEventBox, true, true, 10)
+	self.MainArea.Add(self.ScoreArea)
+
+	self.Scores.SetMarkup("<strong>%s</strong>")
+	self.Scores.SetJustify(gtk.JUSTIFY_CENTER)
+
+	self.ScoreArea.Add(self.Scores)
+	self.BlacksScore.SetJustify(gtk.JUSTIFY_LEFT)
+	self.RedsScore.SetJustify(gtk.JUSTIFY_LEFT)
+	self.ScoreArea.Add(self.BlacksScore)
+	self.ScoreArea.Add(self.RedsScore)
+
 	self.Window.Add(self.MainArea)
 	self.setBoardSize(8)
 	self.BoardView.Connect("draw", self.drawBoard)
 	self.Board.RenderText()
 
 	self.Window.SetTitle("Checkers")
+}
+
+func (self *MainWindow) drawScores( ){
+	reds,blacks := self.Board.GetScores()
+
+
+	self.BlacksScore.SetText(fmt.Sprintf("Black Pieces: %d", blacks ))
+	self.RedsScore.SetText(fmt.Sprintf("Red Pieces: %d", reds ))
 }
 
 
@@ -98,7 +134,6 @@ func (self *MainWindow) drawBoard(da *gtk.DrawingArea, cr *cairo.Context) bool {
 			}
 		}
 	}
-	
 	// Draw pieces
 	for i, row := range self.Board.Places {
 		for j, col := range row {
@@ -106,7 +141,7 @@ func (self *MainWindow) drawBoard(da *gtk.DrawingArea, cr *cairo.Context) bool {
 				if col.Selected {
 					self.DrawSelector(cr, float64(i), float64(j))
 				}
-				if col.Team == "red" {
+				if col.Team == board.RED {
 					self.DrawPiece(cr, float64(i), float64(j), RED)
 				} else {
 					self.DrawPiece(cr, float64(i), float64(j), BLACK)
@@ -115,6 +150,7 @@ func (self *MainWindow) drawBoard(da *gtk.DrawingArea, cr *cairo.Context) bool {
 		}
 	}
 
+	self.drawScores()
 	return false
 }
 
@@ -127,8 +163,24 @@ func (self *MainWindow) interactBoard(eb *gtk.EventBox, event *gdk.Event ) {
 	if !self.Board.SelectTile(x,y) {
 		lastx,lasty := self.getSelectedPiece()
 		if lastx != -1 && self.Board.Places[y][x] == nil {
-			self.Board.MovePiece(lastx,lasty, x,y)
-			self.Board.Places[y][x].Selected = false
+			err := self.Board.MovePiece(lastx,lasty, x,y)
+
+			if err != nil {
+				errorMessage, _ := gtk.LabelNew(err.Error()) 
+				alert, _ := gtk.DialogNew()
+				alert.SetTitle("Error")
+				alert.AddButton("Dismiss", gtk.RESPONSE_CLOSE)
+				box, _ := alert.GetContentArea()
+				box.Add(errorMessage)
+				box.ShowAll()
+				if alert.Run() == int(gtk.RESPONSE_CLOSE) {
+					alert.Destroy()
+				}
+
+			} else {
+				self.Board.Places[y][x].Selected = false
+			}
+
 		}
 	}
 
@@ -138,7 +190,7 @@ func (self *MainWindow) interactBoard(eb *gtk.EventBox, event *gdk.Event ) {
 func (self MainWindow) getSelectedPiece() (x, y int) {
 	for y,row := range self.Board.Places {
 		for x,col := range row {
-			if col != nil  && col.Selected { 
+			if col != nil  && col.Selected {
 				return x,y
 			}
 		}
@@ -155,6 +207,7 @@ func (self MainWindow) calculatePosition(x float64, y float64) (Y, X int){
 		Y = ctx
 		ctx++
 	}
+
 	for j := 0; j < int(y); j= j + int(self.tileHeight) {
 
 		X = cty
@@ -189,6 +242,5 @@ func (self *MainWindow) DrawSelector(cr *cairo.Context, x, y float64) {
 	cr.SetLineWidth(5)
 	cr.Rectangle(x * self.tileWidth, y * self.tileHeight, self.tileWidth, self.tileHeight)
 	cr.Stroke()
-	
 
 }
