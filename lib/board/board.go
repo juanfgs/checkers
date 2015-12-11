@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/juanfgs/checkers/lib/piece"
+
+	"log"
 )
 
 // Size of the board
@@ -109,6 +111,7 @@ func (self *Board) placeBlackPieces() {
 }
 
 func (self *Board) MovePiece(x, y, destX, destY int) error {
+
 	if size < destX {
 		return errors.New("Illegal move: out of bounds")
 	}
@@ -123,12 +126,16 @@ func (self *Board) MovePiece(x, y, destX, destY int) error {
 		return errors.New("Uh oh: It's not your turn")
 	}
 
+
 	if !self.isLegalMovement(x, y, destX, destY) {
 		return errors.New("Illegal move")
 	}
 
+
 	self.Places[destY][destX] = self.Places[y][x]
 	self.Places[y][x] = nil
+
+
 
 	if self.Turn == RED {
 		self.Turn = BLACK
@@ -174,21 +181,51 @@ func (self Board) GetScores() (reds,blacks int) {
 
 
 // Determines wether a movement is legal according to the rules of the Game
-func (self Board) isLegalMovement(x, y, destx, desty int) bool {
+func (self Board) isLegalMovement(x, y, destX, destY int) bool {
 	if self.Places[y][x] != nil {
-		if destx == x || desty == y {
+		if destX == x || destY == y {
 			return false
 		}
 
-		if (destx - x   > 1 || desty - y > 1) && !self.Places[y][x].Crowned {
+		if ((destX - x   > 1 || destY - y > 1) || (x - destX   > 1 ||  y - destY > 1))  && !self.Places[y][x].Crowned {
+			target := self.pieceBetween(x,y,destX,destY)
+			log.Println(target)
+			if self.Places[target[1]][target[0]] != nil && target[1] != x && target[0] != y {
+				log.Println("eat it!")
+				log.Println(self.Places[target[1]][target[0]] )
+				self.Places[target[1]][target[0]] = nil
+				return true
+			}
+
+			
 			return false
+
+
+
 		}
-		if (x - destx   > 1 ||  y - desty > 1) && !self.Places[y][x].Crowned {
-			return false
-		}
+
 
 		return true
 	} else {
 		return false
 	}
+}
+
+// Determines if there is a  piece between origin and destination
+func (self Board) pieceBetween(x,y,destX,destY int) []int {
+	var targetPiece []int = make([]int,2 )
+
+	if destX > x {
+		targetPiece[0] =  destX - 1
+	} else {
+		targetPiece[0] =  destX + 1
+	}
+
+	if destY > y {
+		targetPiece[1] = destY - 1
+	} else {
+		targetPiece[1] = destY + 1
+	}
+
+	return targetPiece
 }

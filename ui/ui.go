@@ -1,15 +1,14 @@
 package ui
 
 import (
-	"github.com/gotk3/gotk3/cairo"
-	"github.com/gotk3/gotk3/gtk"
-	"github.com/gotk3/gotk3/gdk"
-	"github.com/juanfgs/checkers/lib/board"
 	"fmt"
+	"github.com/gotk3/gotk3/cairo"
+	"github.com/gotk3/gotk3/gdk"
+	"github.com/gotk3/gotk3/gtk"
+	"github.com/juanfgs/checkers/lib/board"
 	"log"
-
+	"errors"
 )
-
 
 var RED = []float64{0.8, 0, 0}
 var BLACK = []float64{0, 0, 0}
@@ -17,26 +16,26 @@ var BLACK = []float64{0, 0, 0}
 type MainWindow struct {
 	*gtk.Window
 	// Areas
-	MainArea    *gtk.Box
-	ScoreArea    *gtk.Box
+	MainArea  *gtk.Box
+	ScoreArea *gtk.Box
 
 	// Labels
-	Scores    *gtk.Label	
-	BlacksScore    *gtk.Label
-	RedsScore    *gtk.Label
+	Scores      *gtk.Label
+	BlacksScore *gtk.Label
+	RedsScore   *gtk.Label
 
 	// Board drawing details
 	BoardEventBox *gtk.EventBox
-	BoardView   *gtk.DrawingArea
-	BoardHeight int
-	BoardWidth  int
-	boardSize   int
-	tileWidth   float64
-	tileHeight   float64
+	BoardView     *gtk.DrawingArea
+	BoardHeight   int
+	BoardWidth    int
+	boardSize     int
+	tileWidth     float64
+	tileHeight    float64
 
 	// Internal board structure
-	Board       board.Board
-	err         error
+	Board board.Board
+	err   error
 }
 
 func NewMainWindow() *MainWindow {
@@ -66,7 +65,7 @@ func (self *MainWindow) InitializeWidgets() {
 	self.BoardView, self.err = gtk.DrawingAreaNew()
 	self.MainArea, self.err = gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 1)
 	self.ScoreArea, self.err = gtk.BoxNew(gtk.ORIENTATION_VERTICAL, 2)
-	self.BoardEventBox, self.err =	gtk.EventBoxNew()
+	self.BoardEventBox, self.err = gtk.EventBoxNew()
 	self.Scores, self.err = gtk.LabelNew("Scores:")
 	self.BlacksScore, self.err = gtk.LabelNew("Black pieces:")
 	self.RedsScore, self.err = gtk.LabelNew("Black pieces:")
@@ -99,14 +98,12 @@ func (self *MainWindow) InitializeWidgets() {
 	self.Window.SetTitle("Checkers")
 }
 
-func (self *MainWindow) drawScores( ){
-	reds,blacks := self.Board.GetScores()
+func (self *MainWindow) drawScores() {
+	reds, blacks := self.Board.GetScores()
 
-
-	self.BlacksScore.SetText(fmt.Sprintf("Black Pieces: %d", blacks ))
-	self.RedsScore.SetText(fmt.Sprintf("Red Pieces: %d", reds ))
+	self.BlacksScore.SetText(fmt.Sprintf("Black Pieces: %d", blacks))
+	self.RedsScore.SetText(fmt.Sprintf("Red Pieces: %d", reds))
 }
-
 
 func (self *MainWindow) setBoardSize(size int) {
 	self.boardSize = size
@@ -155,18 +152,18 @@ func (self *MainWindow) drawBoard(da *gtk.DrawingArea, cr *cairo.Context) bool {
 }
 
 // Handles user interaction with the board
-func (self *MainWindow) interactBoard(eb *gtk.EventBox, event *gdk.Event ) {
+func (self *MainWindow) interactBoard(eb *gtk.EventBox, event *gdk.Event) {
 	evbutton := &gdk.EventButton{event}
 
-	y,x := self.calculatePosition( evbutton.X(), evbutton.Y())
+	y, x, error := self.calculatePosition(evbutton.X(), evbutton.Y())
 
-	if !self.Board.SelectTile(x,y) {
-		lastx,lasty := self.getSelectedPiece()
+	if  error == nil && !self.Board.SelectTile(x, y) {
+		lastx, lasty := self.getSelectedPiece()
 		if lastx != -1 && self.Board.Places[y][x] == nil {
-			err := self.Board.MovePiece(lastx,lasty, x,y)
+			err := self.Board.MovePiece(lastx, lasty, x, y)
 
 			if err != nil {
-				errorMessage, _ := gtk.LabelNew(err.Error()) 
+				errorMessage, _ := gtk.LabelNew(err.Error())
 				alert, _ := gtk.DialogNew()
 				alert.SetTitle("Error")
 				alert.AddButton("Dismiss", gtk.RESPONSE_CLOSE)
@@ -188,33 +185,37 @@ func (self *MainWindow) interactBoard(eb *gtk.EventBox, event *gdk.Event ) {
 }
 
 func (self MainWindow) getSelectedPiece() (x, y int) {
-	for y,row := range self.Board.Places {
-		for x,col := range row {
-			if col != nil  && col.Selected {
-				return x,y
+	for y, row := range self.Board.Places {
+		for x, col := range row {
+			if col != nil && col.Selected {
+				return x, y
 			}
 		}
 	}
-	return -1,-1
+	return -1, -1
 }
 
 // Calculates the position in the board based on mouse coordinates
-func (self MainWindow) calculatePosition(x float64, y float64) (Y, X int){
+func (self MainWindow) calculatePosition(x float64, y float64) (Y, X int, err error) {
 	ctx := 0
 	cty := 0
 
-	for i := 0; i < int(x); i= i + int(self.tileWidth) {
+	for i := 0; i < int(x); i = i + int(self.tileWidth) {
 		Y = ctx
 		ctx++
 	}
 
-	for j := 0; j < int(y); j= j + int(self.tileHeight) {
+	for j := 0; j < int(y); j = j + int(self.tileHeight) {
 
 		X = cty
 		cty++
 	}
 
-	return Y,X
+	if self.boardSize < Y || self.boardSize < X {
+		err = errors.New("out of bounds")
+	}
+
+	return Y, X, err
 }
 
 // convenience function to get the position
@@ -234,13 +235,12 @@ func (self *MainWindow) DrawPiece(cr *cairo.Context, x, y float64, color []float
 	cr.Fill()
 }
 
-
 // draw the piece on the canvas
 func (self *MainWindow) DrawSelector(cr *cairo.Context, x, y float64) {
 
 	cr.SetSourceRGBA(0.2, 0.8, 0.2, 0.8)
 	cr.SetLineWidth(5)
-	cr.Rectangle(x * self.tileWidth, y * self.tileHeight, self.tileWidth, self.tileHeight)
+	cr.Rectangle(x*self.tileWidth, y*self.tileHeight, self.tileWidth, self.tileHeight)
 	cr.Stroke()
 
 }
